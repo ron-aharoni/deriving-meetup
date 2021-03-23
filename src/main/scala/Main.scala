@@ -47,17 +47,17 @@ import scala.compiletime.summonFrom
 import scala.compiletime.{error, constValue}
 import scala.deriving.Mirror.Product
 
-// inline def fieldNames[T](): List[String] =
+// inline def fields[T](): List[String] =
 //   summonFrom {
 //     case m: Mirror.ProductOf[T] =>
-//       literalStrings[m.MirroredElemLabels]()
+//       collectTypes[m.MirroredElemLabels]()
 //     case _ =>
-//       error("not a case class")
+//       error("failed to collect types")
 //   }
 
-// inline def literalStrings[T](): List[String] =
+// inline def collectTypes[T](): List[String] =
 //   erasedValue[T] match
-//     case _: (head *: tail) => constValue[head] :: literalStrings[tail]()
+//     case _: (head *: tail) => constValue[String] :: collectTypes[tail]()
 //     case EmptyTuple => Nil
 
 
@@ -70,5 +70,5 @@ import scala.deriving.Mirror.Product
 
   case class IceCream(price: Double, n: Int)
 
-  // fieldNames[IceCream]()
+  // fields[IceCream]()
 
