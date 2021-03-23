@@ -45,6 +45,7 @@ object Random:
          case p: Mirror.ProductOf[A] => randomProduct(p, instances)
    
 end Random
+
 @main def test(): Unit =
 
    case class IceCream(n: Int, s: String)
