@@ -1,51 +1,60 @@
 import scala.deriving._
 import scala.deriving.Mirror
-import scala.compiletime.{erasedValue, summonInline}
+import scala.compiletime.{erasedValue, summonInline, constValue}
 
-inline def summonAll[T <: Tuple]: List[Eq[_]] =
-   inline erasedValue[T] match
+type TC[A] = Random[A]
+
+inline def summonAll[A <: Tuple]: List[TC[_]] =
+   inline erasedValue[A] match
       case _: EmptyTuple => Nil
-      case _: (t *: ts) => summonInline[Eq[t]] :: summonAll[ts]
+      case _: (t *: ts) => summonInline[TC[t]] :: summonAll[ts]
 
-trait Eq[T]:
-   def eqv(x: T, y: T): Boolean
+inline def sizeT[A <: Tuple]: Int =
+   inline erasedValue[A] match
+      case _: EmptyTuple => 0
+      case _: (t *: ts) => 1 + sizeT[ts]
 
-object Eq:
-   given Eq[Int] with
-      def eqv(x: Int, y: Int) = x == y
+trait Random[A]:
+   def generate(): A
 
-   def check(elem: Eq[_])(x: Any, y: Any): Boolean =
-      elem.asInstanceOf[Eq[Any]].eqv(x, y)
+object Random:
+   private def iterator[A](p: A) = p.asInstanceOf[Product].productIterator
 
-   def iterator[T](p: T) = p.asInstanceOf[Product].productIterator
+   private def randomSum[A](s: Mirror.SumOf[A], instances: => List[TC[_]]): TC[A] =
+      new TC[A]:
+         def generate(): A =
+            //val ss = sizeT[s.MirroredElemTypes]
+            //val idx = scala.util.Random.nextInt(ss)
+            //val typ = s.MirroredElemTypes(idx)
+            ???
 
-   def eqSum[T](s: Mirror.SumOf[T], elems: => List[Eq[_]]): Eq[T] =
-      new Eq[T]:
-         def eqv(x: T, y: T): Boolean =
-            val ordx = s.ordinal(x)
-            (s.ordinal(y) == ordx) && check(elems(ordx))(x, y)
 
-   def eqProduct[T](p: Mirror.ProductOf[T], elems: => List[Eq[_]]): Eq[T] =
-      new Eq[T]:
-         def eqv(x: T, y: T): Boolean =
-            iterator(x).zip(iterator(y)).zip(elems.iterator).forall {
-               case ((x, y), elem) => check(elem)(x, y)
-            }
+   private def randomProduct[A](p: Mirror.ProductOf[A], instances: => List[TC[_]]): TC[A] =
+      new TC[A]:
+         def generate(): A =
+            val ps = instances.map(i => i.generate())
+            // p.fromProduct(ps)
+            ???
 
-   inline given derived[T](using m: Mirror.Of[T]): Eq[T] =
+   inline given derived[A](using m: Mirror.Of[A]): TC[A] =
       lazy val elemInstances = summonAll[m.MirroredElemTypes]
       inline m match
-         case s: Mirror.SumOf[T]     => eqSum(s, elemInstances)
-         case p: Mirror.ProductOf[T] => eqProduct(p, elemInstances)
-end Eq
+         case s: Mirror.SumOf[A]     => randomSum(s, elemInstances)
+         case p: Mirror.ProductOf[A] => randomProduct(p, elemInstances)
 
-enum Opt[+T] derives Eq:
-   case Sm(t: T)
-   case Nn
+end Random
+
+// number of args in a case class
+inline def caseClassSize[A](using m: Mirror.Of[A]): Int =
+   sizeT[m.MirroredElemTypes]
+
 
 @main def test(): Unit =
-   import Opt._
-   val eqoi = summon[Eq[Opt[Int]]]
-   assert(eqoi.eqv(Sm(23), Sm(23)))
-   assert(!eqoi.eqv(Sm(23), Sm(13)))
-   assert(!eqoi.eqv(Sm(23), Nn))
+   // val eqoi = summon[Eq[Opt[Int]]]
+   // assert(!eqoi.eqv(Sm(23), Nn))
+
+   println("hello")
+
+   case class IceCream(n: Int, s: String)
+
+   println(caseClassSize[IceCream])
