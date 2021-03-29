@@ -12,7 +12,6 @@ def generateProduct(instances: List[Random[_]], acc: Tuple): Tuple =
       case Nil => acc
       case h :: t => h.generate() *: generateProduct(t, acc)
 
-// number of args in a case class
 inline def caseClassSize[A](using m: Mirror.Of[A]): Int =
    sizeT[m.MirroredElemTypes]
 
@@ -45,6 +44,7 @@ object Random:
          case p: Mirror.ProductOf[A] => randomProduct(p, elemInstances)
    
 end Random
+
 @main def test(): Unit =
 
    case class IceCream(n: Int, s: String)
